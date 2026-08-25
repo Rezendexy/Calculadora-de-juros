@@ -1,6 +1,6 @@
 # Simulador de Aposentadoria — 3 calculadoras
 
-Simulador educacional de aposentadoria com juros compostos reais. Página única, sem dependências e sem build: é só abrir o `index.html`.
+Simulador educacional de aposentadoria com juros compostos reais. Sem dependências e sem build: é só abrir o `index.html`.
 
 ## O que ele calcula
 
@@ -28,14 +28,30 @@ A taxa é editável no topo da página, caso o professor queira comparar cenári
 
 ## Como publicar no GitHub Pages
 
-1. Suba `index.html` (e este `README.md`) na raiz do repositório.
+1. Suba a pasta inteira (`index.html`, `frontend/`, `backend/`, `README.md`) na raiz do repositório.
 2. Repositório → **Settings** → **Pages**.
 3. Em *Source*, escolha **Deploy from a branch** → branch `main` → pasta `/ (root)` → **Save**.
 4. Em cerca de 1 minuto o site fica no ar em `https://SEU-USUARIO.github.io/NOME-DO-REPO/`.
 
+## Estrutura de arquivos
+
+```
+index.html              shell HTML (marcação das 3 calculadoras)
+frontend/
+  css/styles.css         todo o estilo visual
+  js/format.js           formatação de número/moeda e parsing de input
+  js/chart.js            desenho do gráfico SVG e tooltip
+  js/app.js              validação de formulário, eventos, abas, tema — liga tudo à página
+backend/
+  js/finance.js          funções puras de matemática financeira (sem DOM)
+```
+
+`finance.js` não depende de nada — pode ser reaproveitado em Node ou em outro front-end.
+Os scripts são carregados em ordem (`finance.js` → `format.js` → `chart.js` → `app.js`) como globais simples (`Finance`, `Format`, `Chart`), sem bundler.
+
 ## Detalhes técnicos
 
-- HTML + CSS + JavaScript puro, tudo em um arquivo só.
+- HTML + CSS + JavaScript puro, sem build nem framework.
 - Gráficos em SVG gerados na hora, sem biblioteca externa.
 - Entrada aceita formato brasileiro (`1.500,50`) e também `1500.50`.
 - Validação de campos, mensagens de erro com `role="alert"`, navegação por teclado nas abas.
