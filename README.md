@@ -6,14 +6,16 @@ Simulador educacional de aposentadoria com juros compostos reais. Sem dependênc
 
 | # | Pergunta | Entradas | Fórmula |
 |---|----------|----------|---------|
-| 1 | Quanto vou ter quando me aposentar? | aporte mensal, anos | `FV = PMT × [((1+i)^n − 1) / i]` |
-| 2 | Quanto preciso poupar por mês? | patrimônio desejado, anos | `PMT = FV × i / ((1+i)^n − 1)` |
+| 1 | Quanto vou ter quando me aposentar? | valor inicial (opcional), aporte mensal, anos | `FV = PV×(1+i)^n + PMT × [((1+i)^n − 1) / i]` |
+| 2 | Quanto preciso poupar por mês? | valor inicial (opcional), patrimônio desejado, anos | `PMT = (FV − PV×(1+i)^n) × i / ((1+i)^n − 1)` |
 | 3A | Quanto posso gastar vivendo só dos juros? | patrimônio | `saque = P × i` |
 | 3B | Quanto posso gastar zerando o patrimônio? | patrimônio, anos | `saque = P × [i(1+i)^n / ((1+i)^n − 1)]` |
 
 - `i` = taxa de juros **reais** por mês (padrão 0,5% a.m. = 0,005, equivalente a 6,1678% a.a.)
 - `n` = número de meses (anos × 12)
+- `PV` = valor que a pessoa já tem hoje (padrão 0, quando o campo fica em branco)
 - Aportes e saques no fim de cada mês (série postecipada)
+- Na calculadora 2, se o `PV` sozinho já supera a meta, `PMT` fica em 0 (a calculadora nunca pede aporte negativo)
 
 A taxa é editável no topo da página, caso o professor queira comparar cenários.
 

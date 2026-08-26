@@ -41,7 +41,7 @@
 
   <section class="hero">
     <h1>Simulador de Aposentadoria</h1>
-    <p>Três calculadoras para planejar a aposentadoria: quanto você vai acumular, quanto precisa poupar por mês e quanto poderá gastar depois. Preencha as duas perguntas de cada uma e veja a resposta na hora.</p>
+    <p>Três calculadoras para planejar a aposentadoria: quanto você vai acumular, quanto precisa poupar por mês e quanto poderá gastar depois. Preencha as perguntas de cada uma e veja a resposta na hora.</p>
     <p class="hero__note" id="taxa-eq">Taxa de juros real: <b id="taxa-mes">0,5% ao mês</b></p>
   </section>
 
@@ -96,6 +96,22 @@
               <button class="chip" type="button" data-fill="c1-anos" data-value="20">20 anos</button>
               <button class="chip" type="button" data-fill="c1-anos" data-value="30">30 anos</button>
               <button class="chip" type="button" data-fill="c1-anos" data-value="40">40 anos</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="c1-inicial">Quanto você já tem hoje? (opcional)</label>
+            <span class="hint">O valor que você já tem guardado ou investido para a aposentadoria. Se ainda não tem nada, deixe 0.</span>
+            <div class="input" id="c1-inicial-box">
+              <span class="input__affix">R$</span>
+              <input id="c1-inicial" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off" data-mask="money">
+            </div>
+            <p class="error" role="alert" aria-live="polite" id="c1-inicial-err"></p>
+            <div class="chips">
+              <button class="chip" type="button" data-fill="c1-inicial" data-value="0">R$ 0</button>
+              <button class="chip" type="button" data-fill="c1-inicial" data-value="10000">R$ 10 mil</button>
+              <button class="chip" type="button" data-fill="c1-inicial" data-value="50000">R$ 50 mil</button>
+              <button class="chip" type="button" data-fill="c1-inicial" data-value="100000">R$ 100 mil</button>
             </div>
           </div>
 
@@ -180,6 +196,22 @@
             </div>
           </div>
 
+          <div class="field">
+            <label for="c2-inicial">Quanto você já tem hoje? (opcional)</label>
+            <span class="hint">O valor que você já tem guardado ou investido pensando nesse objetivo. Se ainda não tem nada, deixe 0.</span>
+            <div class="input" id="c2-inicial-box">
+              <span class="input__affix">R$</span>
+              <input id="c2-inicial" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off" data-mask="money">
+            </div>
+            <p class="error" role="alert" aria-live="polite" id="c2-inicial-err"></p>
+            <div class="chips">
+              <button class="chip" type="button" data-fill="c2-inicial" data-value="0">R$ 0</button>
+              <button class="chip" type="button" data-fill="c2-inicial" data-value="10000">R$ 10 mil</button>
+              <button class="chip" type="button" data-fill="c2-inicial" data-value="50000">R$ 50 mil</button>
+              <button class="chip" type="button" data-fill="c2-inicial" data-value="100000">R$ 100 mil</button>
+            </div>
+          </div>
+
           <div class="actions">
             <button class="btn btn--ghost" type="button" data-clear="form2">Limpar</button>
             <button class="btn btn--primary" type="submit">Calcular</button>
@@ -231,12 +263,11 @@
         <div class="card__head">
           <p class="card__kicker">Calculadora 03</p>
           <h2 class="card__title">Quanto posso gastar por mês na aposentadoria?</h2>
-          <p class="card__sub">Duas respostas: viver só dos juros ou usar todo o patrimônio.</p>
         </div>
         <div class="card__body">
           <div class="field">
             <label for="c3-patrimonio">Quanto você acumulou para se aposentar?</label>
-            <span class="hint">O valor que você já tem investido no dia em que para de trabalhar.</span>
+            <span class="hint">Qual valor você tem de patrimônio para usufruir na sua aposentadoria?</span>
             <div class="input" id="c3-patrimonio-box">
               <span class="input__affix">R$</span>
               <input id="c3-patrimonio" type="text" inputmode="decimal" placeholder="500.000,00" autocomplete="off" data-mask="money">
@@ -275,7 +306,7 @@
         <div class="split">
           <div class="answer is-empty" id="c3a-answer">
             <span class="badge badge--a">Opção A</span>
-            <p class="answer__label">Viver só dos juros</p>
+            <p class="answer__label">Viver dos juros e preservar a herança corrigida pela inflação</p>
             <p class="answer__big" id="c3a-result">R$ 0,00</p>
             <p class="answer__caption" id="c3a-caption">Preencha o patrimônio para ver o resultado.</p>
           </div>

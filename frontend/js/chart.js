@@ -5,7 +5,7 @@
   var esc = Format.esc;
   var yearLabel = Format.yearLabel;
 
-  var CW = 720, CH = 300, PAD = { t: 14, r: 14, b: 30, l: 60 };
+  var CW = 720, CH = 300, PAD = { t: 26, r: 16, b: 30, l: 60 };
 
   /**
    * cfg = {
@@ -53,10 +53,18 @@
       return d.trim();
     }
 
+    // faixa entre duas curvas (ex.: só a parte dos juros, sem repetir a área dos depósitos)
+    function strip(top, bottom) {
+      var d = "";
+      for (var k = 0; k < top.length; k++) d += (k ? "L" : "M") + X(k).toFixed(2) + " " + Y(top[k]).toFixed(2) + " ";
+      for (var j = bottom.length - 1; j >= 0; j--) d += "L" + X(j).toFixed(2) + " " + Y(bottom[j]).toFixed(2) + " ";
+      return (d + "Z").trim();
+    }
+
     if (cfg.band) {
-      // área total (juros) e área dos depósitos por cima
-      svg += '<path d="' + path(cfg.band.top, true) + '" fill="var(--warm)" opacity=".24"/>';
-      svg += '<path d="' + path(cfg.band.bottom, true) + '" fill="var(--accent)" opacity=".28"/>';
+      // duas áreas sólidas e sem sobreposição: depósitos embaixo, juros só na faixa acima
+      svg += '<path d="' + path(cfg.band.bottom, true) + '" fill="var(--accent)" opacity=".30"/>';
+      svg += '<path d="' + strip(cfg.band.top, cfg.band.bottom) + '" fill="var(--warm)" opacity=".32"/>';
       svg += '<path d="' + path(cfg.band.bottom, false) + '" fill="none" stroke="var(--accent)" stroke-width="2.75" stroke-linejoin="round"/>';
       svg += '<path d="' + path(cfg.band.top, false) + '" fill="none" stroke="var(--warm)" stroke-width="3" stroke-linejoin="round"/>';
     }
@@ -73,6 +81,18 @@
     ] : (cfg.series || []).map(function (s) { return { v: s.values[n], color: s.color === "warm" ? "var(--warm)" : "var(--accent)" }; });
     endMarkers.forEach(function (m) {
       svg += '<circle cx="' + X(n).toFixed(2) + '" cy="' + Y(m.v).toFixed(2) + '" r="4.5" fill="' + m.color + '" stroke="var(--surface)" stroke-width="2"/>';
+    });
+
+    // valor final escrito no próprio gráfico (não depende de passar o mouse)
+    var labels = endMarkers.map(function (m) { return { v: m.v, color: m.color, y: Y(m.v) - 11 }; }).sort(function (a, b) { return a.y - b.y; });
+    for (var li = 1; li < labels.length; li++) {
+      if (labels[li].y - labels[li - 1].y < 16) labels[li].y = labels[li - 1].y + 16;
+    }
+    labels.forEach(function (m) {
+      var ly = Math.max(PAD.t + 8, Math.min(CH - PAD.b - 3, m.y));
+      svg += '<text x="' + (X(n) - 13).toFixed(1) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="end" ' +
+        'style="fill:' + m.color + ';font-weight:700;font-size:12.5px" paint-order="stroke" stroke="var(--surface)" stroke-width="4" stroke-linejoin="round">' +
+        esc(shortMoney(m.v)) + '</text>';
     });
 
     // linha guia do tooltip

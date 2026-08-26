@@ -1,15 +1,20 @@
 (function (global) {
   "use strict";
 
-  // FV = PMT * [((1+i)^n - 1) / i]
-  function futureValue(pmt, i, n) {
-    if (i === 0) return pmt * n;
-    return pmt * ((Math.pow(1 + i, n) - 1) / i);
+  // FV = PV*(1+i)^n + PMT * [((1+i)^n - 1) / i]
+  function futureValue(pmt, i, n, pv) {
+    pv = pv || 0;
+    var growth = Math.pow(1 + i, n);
+    var fromPmt = i === 0 ? pmt * n : pmt * ((growth - 1) / i);
+    return pv * growth + fromPmt;
   }
-  // PMT = FV * i / ((1+i)^n - 1)
-  function payment(fv, i, n) {
-    if (i === 0) return fv / n;
-    return fv * i / (Math.pow(1 + i, n) - 1);
+  // PMT = (FV - PV*(1+i)^n) * i / ((1+i)^n - 1)
+  function payment(fv, i, n, pv) {
+    pv = pv || 0;
+    var growth = Math.pow(1 + i, n);
+    var remaining = fv - pv * growth;
+    if (remaining <= 0) return 0;
+    return i === 0 ? remaining / n : remaining * i / (growth - 1);
   }
   // Saque A = P * i
   function incomePerpetual(p, i) { return p * i; }
@@ -20,12 +25,13 @@
     return p * (i * f) / (f - 1);
   }
   // Série de saldos da acumulação: saldo[m] após m meses
-  function accumulationSeries(pmt, i, n) {
-    var out = new Array(n + 1), bal = 0;
-    out[0] = { total: 0, base: 0 };
+  function accumulationSeries(pmt, i, n, pv) {
+    pv = pv || 0;
+    var out = new Array(n + 1), bal = pv;
+    out[0] = { total: pv, base: pv };
     for (var m = 1; m <= n; m++) {
       bal = bal * (1 + i) + pmt;
-      out[m] = { total: bal, base: pmt * m };
+      out[m] = { total: bal, base: pv + pmt * m };
     }
     return out;
   }

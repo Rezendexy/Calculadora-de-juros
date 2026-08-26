@@ -69,6 +69,19 @@
     return v;
   }
 
+  // Como readField, mas o campo é opcional: vazio vale 0 e nunca mostra "preencha este campo".
+  function readOptionalField(id, opts) {
+    var el = document.getElementById(id);
+    var raw = el.value.trim();
+    if (!raw) { setError(id, ""); return 0; }
+    var v = parseNumber(raw);
+    if (!isFinite(v)) { setError(id, "Use apenas números. Ex.: " + opts.example); return null; }
+    if (v < 0) { setError(id, "O valor não pode ser negativo."); return null; }
+    if (opts.max && v > opts.max) { setError(id, "Valor muito alto. Use até " + opts.maxLabel + "."); return null; }
+    setError(id, "");
+    return v;
+  }
+
   /* ============ estado de "campo tocado" ============ */
   var touched = {};
   function markTouched(id) { touched[id] = true; }
@@ -77,32 +90,35 @@
   /* ============ Calculadora 1 ============ */
   function calc1(force) {
     var i = getRate();
+    var inicial = readOptionalField("c1-inicial", { example: "10.000,00", max: 1e12, maxLabel: "R$ 1 trilhão" });
     var pmt = readField("c1-aporte", { example: "1.000,00", max: 1e9, maxLabel: "R$ 1 bilhão" }, force || isTouched("c1-aporte"));
     var anos = readField("c1-anos", { example: "30", max: 100, maxLabel: "100 anos" }, force || isTouched("c1-anos"));
     var ans = document.getElementById("c1-answer");
 
-    if (i === null || pmt === null || anos === null) {
+    if (i === null || inicial === null || pmt === null || anos === null) {
       ans.classList.add("is-empty");
       document.getElementById("c1-result").textContent = "R$ 0,00";
-      document.getElementById("c1-caption").textContent = "Preencha os dois campos ao lado para ver o resultado.";
+      document.getElementById("c1-caption").textContent = "Preencha os campos ao lado para ver o resultado.";
       ["c1-aportado", "c1-juros"].forEach(function (k) { document.getElementById(k).textContent = "—"; });
       Chart.draw(document.getElementById("c1-chart"), null);
       return;
     }
 
     var n = Fi.months(anos);
-    var fv = Fi.futureValue(pmt, i, n);
-    var aportado = pmt * n;
+    var fv = Fi.futureValue(pmt, i, n, inicial);
+    var aportado = inicial + pmt * n;
     var juros = fv - aportado;
+    var anosLabel = fmtNum.format(anos).replace(",00", "") + " anos";
 
     ans.classList.remove("is-empty");
     document.getElementById("c1-result").textContent = money(fv);
-    document.getElementById("c1-caption").innerHTML =
-      "Poupando <b>" + money(pmt) + "</b> por mês durante <b>" + fmtNum.format(anos).replace(",00", "") + " anos</b> (" + n + " meses), você chega a <b>" + money(fv) + "</b>.";
+    document.getElementById("c1-caption").innerHTML = inicial > 0
+      ? "Partindo de <b>" + money(inicial) + "</b> hoje e poupando <b>" + money(pmt) + "</b> por mês durante <b>" + anosLabel + "</b> (" + n + " meses), você chega a <b>" + money(fv) + "</b>."
+      : "Poupando <b>" + money(pmt) + "</b> por mês durante <b>" + anosLabel + "</b> (" + n + " meses), você chega a <b>" + money(fv) + "</b>.";
     document.getElementById("c1-aportado").textContent = money(aportado);
     document.getElementById("c1-juros").textContent = money(juros);
 
-    var serie = Fi.accumulationSeries(pmt, i, n);
+    var serie = Fi.accumulationSeries(pmt, i, n, inicial);
     Chart.draw(document.getElementById("c1-chart"), {
       totalYears: anos,
       band: { top: serie.map(function (p) { return p.total; }), bottom: serie.map(function (p) { return p.base; }) },
@@ -116,33 +132,40 @@
   /* ============ Calculadora 2 ============ */
   function calc2(force) {
     var i = getRate();
+    var inicial = readOptionalField("c2-inicial", { example: "10.000,00", max: 1e12, maxLabel: "R$ 1 trilhão" });
     var meta = readField("c2-meta", { example: "1.000.000,00", max: 1e12, maxLabel: "R$ 1 trilhão" }, force || isTouched("c2-meta"));
     var anos = readField("c2-anos", { example: "30", max: 100, maxLabel: "100 anos" }, force || isTouched("c2-anos"));
     var ans = document.getElementById("c2-answer");
 
-    if (i === null || meta === null || anos === null) {
+    if (i === null || inicial === null || meta === null || anos === null) {
       ans.classList.add("is-empty");
       document.getElementById("c2-result").textContent = "R$ 0,00";
-      document.getElementById("c2-caption").textContent = "Preencha os dois campos ao lado para ver o resultado.";
+      document.getElementById("c2-caption").textContent = "Preencha os campos ao lado para ver o resultado.";
       ["c2-aportado", "c2-juros", "c2-ano"].forEach(function (k) { document.getElementById(k).textContent = "—"; });
       Chart.draw(document.getElementById("c2-chart"), null);
       return;
     }
 
     var n = Fi.months(anos);
-    var pmt = Fi.payment(meta, i, n);
-    var aportado = pmt * n;
-    var juros = meta - aportado;
+    var pmt = Fi.payment(meta, i, n, inicial);
+    var anosLabel = fmtNum.format(anos).replace(",00", "") + " anos";
+    var jaAtinge = pmt === 0;
+    var fvFinal = jaAtinge ? Fi.futureValue(0, i, n, inicial) : meta;
+    var aportado = inicial + pmt * n;
+    var juros = fvFinal - aportado;
 
     ans.classList.remove("is-empty");
     document.getElementById("c2-result").textContent = money(pmt);
-    document.getElementById("c2-caption").innerHTML =
-      "Para ter <b>" + money(meta) + "</b> em <b>" + fmtNum.format(anos).replace(",00", "") + " anos</b>, guarde <b>" + money(pmt) + "</b> todo mês — cerca de <b>" + money(pmt / 30) + "</b> por dia.";
+    document.getElementById("c2-caption").innerHTML = jaAtinge
+      ? "Sozinho, o valor de <b>" + money(inicial) + "</b> que você já tem chega a <b>" + money(fvFinal) + "</b> em <b>" + anosLabel + "</b> — mais do que sua meta de <b>" + money(meta) + "</b> — mesmo sem guardar mais nada por mês."
+      : (inicial > 0
+        ? "Você já tem <b>" + money(inicial) + "</b>. Para completar <b>" + money(meta) + "</b> em <b>" + anosLabel + "</b>, guarde <b>" + money(pmt) + "</b> todo mês — cerca de <b>" + money(pmt / 30) + "</b> por dia."
+        : "Para ter <b>" + money(meta) + "</b> em <b>" + anosLabel + "</b>, guarde <b>" + money(pmt) + "</b> todo mês — cerca de <b>" + money(pmt / 30) + "</b> por dia.");
     document.getElementById("c2-aportado").textContent = money(aportado);
     document.getElementById("c2-juros").textContent = money(juros);
     document.getElementById("c2-ano").textContent = money(pmt * 12);
 
-    var serie = Fi.accumulationSeries(pmt, i, n);
+    var serie = Fi.accumulationSeries(pmt, i, n, inicial);
     Chart.draw(document.getElementById("c2-chart"), {
       totalYears: anos,
       band: { top: serie.map(function (p) { return p.total; }), bottom: serie.map(function (p) { return p.base; }) },

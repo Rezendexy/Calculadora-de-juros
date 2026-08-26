@@ -14,6 +14,7 @@
 
   function shortMoney(v) {
     var a = Math.abs(v);
+    if (a >= 1e9) return "R$ " + trim(v / 1e9) + " bi";
     if (a >= 1e6) return "R$ " + trim(v / 1e6) + " mi";
     if (a >= 1e3) return "R$ " + trim(v / 1e3) + " mil";
     return "R$ " + Math.round(v);
