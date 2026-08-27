@@ -4,13 +4,27 @@
   var Fi = Finance;
   var money = Format.money;
   var fmtNum = Format.fmtNum;
-  var fmtPct = Format.fmtPct;
   var parseNumber = Format.parseNumber;
-  var yearLabel = Format.yearLabel;
+  var yearLabelLong = Format.yearLabelLong;
+
+  // Monta o tooltip do gráfico: quando faz isso, quando chegou a este valor,
+  // e como ele se divide — sempre com a cor só na "chave", nunca no texto.
+  function tipHTML(k, main, rows) {
+    var html = '<div class="tip__time">' + yearLabelLong(k) + '</div>';
+    if (main) {
+      html += '<div class="tip__label">' + main.label + '</div><div class="tip__main">' + money(main.value) + '</div>';
+    }
+    rows.forEach(function (r) {
+      html += '<div class="tip__row"><i class="tip__key" style="background:var(--' + r.color + ')"></i>' +
+        '<span class="tip__rowlabel">' + r.label + '</span><span class="tip__val">' + money(r.value) + '</span></div>';
+    });
+    return html;
+  }
 
   /* ============ taxa global ============ */
   var rateInput = document.getElementById("taxa");
   var rateMonthLabel = document.getElementById("taxa-mes");
+  var rateValueBox = rateInput.closest(".hero__note-value");
 
   function getRate() {
     var pct = parseNumber(rateInput.value);
@@ -21,11 +35,11 @@
     var i = getRate();
     if (i === null) {
       rateMonthLabel.textContent = "taxa inválida";
-      rateInput.style.color = "var(--danger)";
+      rateValueBox.classList.add("is-error");
       return;
     }
-    rateInput.style.color = "";
-    rateMonthLabel.textContent = fmtPct.format(i * 100) + "% ao mês";
+    rateValueBox.classList.remove("is-error");
+    rateMonthLabel.textContent = "ao mês";
   }
 
   /* ============ máscara e validação ============ */
@@ -124,7 +138,10 @@
       band: { top: serie.map(function (p) { return p.total; }), bottom: serie.map(function (p) { return p.base; }) },
       tooltip: function (k) {
         var p = serie[k];
-        return "<b>" + yearLabel(k) + "</b><br>Patrimônio: <b>" + money(p.total) + "</b><br>Depositado: " + money(p.base) + "<br>Juros: " + money(p.total - p.base);
+        return tipHTML(k, { label: "Patrimônio", value: p.total }, [
+          { color: "accent", label: "Depositado", value: p.base },
+          { color: "warm", label: "Juros", value: p.total - p.base }
+        ]);
       }
     });
   }
@@ -171,7 +188,10 @@
       band: { top: serie.map(function (p) { return p.total; }), bottom: serie.map(function (p) { return p.base; }) },
       tooltip: function (k) {
         var p = serie[k];
-        return "<b>" + yearLabel(k) + "</b><br>Patrimônio: <b>" + money(p.total) + "</b><br>Depositado: " + money(p.base) + "<br>Juros: " + money(p.total - p.base);
+        return tipHTML(k, { label: "Patrimônio", value: p.total }, [
+          { color: "accent", label: "Depositado", value: p.base },
+          { color: "warm", label: "Juros", value: p.total - p.base }
+        ]);
       }
     });
   }
@@ -223,7 +243,10 @@
         { values: serieB, color: "warm", fill: true }
       ],
       tooltip: function (k) {
-        return "<b>" + yearLabel(k) + "</b><br>Opção A: <b>" + money(p) + "</b><br>Opção B: <b>" + money(serieB[k]) + "</b>";
+        return tipHTML(k, null, [
+          { color: "accent", label: "Opção A", value: p },
+          { color: "warm", label: "Opção B", value: serieB[k] }
+        ]);
       }
     });
   }
@@ -323,6 +346,15 @@
     var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
     root.setAttribute("data-theme", next);
     try { localStorage.setItem("tema", next); } catch (err) {}
+  });
+
+  /* ============ liquid glass: brilho que segue o ponteiro ============ */
+  document.querySelectorAll(".glass").forEach(function (el) {
+    el.addEventListener("pointermove", function (e) {
+      var r = el.getBoundingClientRect();
+      el.style.setProperty("--gx", ((e.clientX - r.left) / r.width * 100) + "%");
+      el.style.setProperty("--gy", ((e.clientY - r.top) / r.height * 100) + "%");
+    });
   });
 
   /* ============ início ============ */

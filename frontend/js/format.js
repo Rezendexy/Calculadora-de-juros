@@ -42,12 +42,13 @@
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
 
-  function yearLabel(k) {
+  // Para o tooltip do gráfico, por extenso ("daqui a 38 anos e 10 meses").
+  function yearLabelLong(k) {
     var anos = Math.floor(k / 12), meses = k % 12;
-    if (k === 0) return "hoje";
-    if (anos === 0) return meses + (meses === 1 ? " mês" : " meses");
-    if (meses === 0) return anos + (anos === 1 ? " ano" : " anos");
-    return anos + "a " + meses + "m";
+    if (k === 0) return "Hoje";
+    if (anos === 0) return "Daqui a " + meses + (meses === 1 ? " mês" : " meses");
+    if (meses === 0) return "Daqui a " + anos + (anos === 1 ? " ano" : " anos");
+    return "Daqui a " + anos + (anos === 1 ? " ano" : " anos") + " e " + meses + (meses === 1 ? " mês" : " meses");
   }
 
   global.Format = {
@@ -59,6 +60,6 @@
     trim: trim,
     parseNumber: parseNumber,
     esc: esc,
-    yearLabel: yearLabel
+    yearLabelLong: yearLabelLong
   };
 })(window);

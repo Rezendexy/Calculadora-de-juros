@@ -3,9 +3,22 @@
 
   var shortMoney = Format.shortMoney;
   var esc = Format.esc;
-  var yearLabel = Format.yearLabel;
 
-  var CW = 720, CH = 300, PAD = { t: 26, r: 16, b: 30, l: 60 };
+  var CW = 720, CH = 300, PAD = { t: 20, r: 14, b: 30, l: 54 };
+
+  // Eixo X sempre em anos inteiros ("hoje", "N anos") — nunca mistura com meses.
+  function niceYearStep(totalYears) {
+    var steps = [1, 2, 5, 10, 20, 25, 50, 100];
+    for (var i = 0; i < steps.length; i++) {
+      if (Math.ceil(totalYears / steps[i]) <= 6) return steps[i];
+    }
+    return steps[steps.length - 1];
+  }
+  function yearsAxisLabel(yy) {
+    if (yy <= 0) return "Hoje";
+    var r = Math.round(yy);
+    return r + (r === 1 ? " ano" : " anos");
+  }
 
   /**
    * cfg = {
@@ -23,28 +36,45 @@
     (cfg.series || []).forEach(function (s) { all = all.concat(s.values); });
     var max = Math.max.apply(null, all);
     if (!isFinite(max) || max <= 0) max = 1;
-    max = max * 1.08;
+    max = max * 1.12;
 
     var n = cfg.band ? cfg.band.top.length - 1 : cfg.series[0].values.length - 1;
     var iw = CW - PAD.l - PAD.r, ih = CH - PAD.t - PAD.b;
     var X = function (k) { return PAD.l + (n === 0 ? 0 : (k / n) * iw); };
     var Y = function (v) { return PAD.t + ih - (v / max) * ih; };
 
+    var uid = (host.id || "chart") + "-" + Math.random().toString(36).slice(2, 7);
+    var gradAccent = "g-accent-" + uid, gradWarm = "g-warm-" + uid;
+
     var svg = '<svg viewBox="0 0 ' + CW + ' ' + CH + '" role="img" aria-label="Gráfico da evolução do patrimônio" preserveAspectRatio="xMidYMid meet">';
+    svg += '<defs>' +
+      '<linearGradient id="' + gradAccent + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="var(--accent)" stop-opacity=".24"/>' +
+        '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>' +
+      '</linearGradient>' +
+      '<linearGradient id="' + gradWarm + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="var(--warm)" stop-opacity=".28"/>' +
+        '<stop offset="100%" stop-color="var(--warm)" stop-opacity="0"/>' +
+      '</linearGradient>' +
+    '</defs>';
 
-    // grades horizontais
-    for (var g = 0; g <= 4; g++) {
-      var val = (max / 4) * g, y = Y(val);
+    // grades horizontais (hairline, recessivas)
+    for (var g = 0; g <= 3; g++) {
+      var val = (max / 3) * g, y = Y(val);
       svg += '<line x1="' + PAD.l + '" y1="' + y.toFixed(1) + '" x2="' + (CW - PAD.r) + '" y2="' + y.toFixed(1) + '" stroke="' + (g === 0 ? "var(--line-strong)" : "var(--line)") + '" stroke-width="1"/>';
-      svg += '<text x="' + (PAD.l - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-weight="500">' + esc(g === 0 ? "0" : shortMoney(val)) + '</text>';
+      svg += '<text x="' + (PAD.l - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-weight="500" fill="var(--muted)">' + esc(g === 0 ? "0" : shortMoney(val)) + '</text>';
     }
 
-    // rótulos do eixo x (anos)
-    var ticks = Math.min(6, Math.max(2, Math.round(cfg.totalYears / 5)));
-    for (var t = 0; t <= ticks; t++) {
-      var k = Math.round((t / ticks) * n);
-      svg += '<text x="' + X(k).toFixed(1) + '" y="' + (CH - 10) + '" text-anchor="' + (t === 0 ? "start" : (t === ticks ? "end" : "middle")) + '">' + esc(yearLabel(k)) + '</text>';
-    }
+    // rótulos do eixo x — sempre em anos inteiros, nunca mistura "anos" com "meses"
+    var step = niceYearStep(cfg.totalYears);
+    var xTicks = [];
+    for (var yy = 0; yy < cfg.totalYears - step * 0.4; yy += step) xTicks.push(yy);
+    xTicks.push(cfg.totalYears);
+    xTicks.forEach(function (yy) {
+      var k = Math.max(0, Math.min(n, Math.round((yy / cfg.totalYears) * n)));
+      var anchor = yy <= 0 ? "start" : (yy >= cfg.totalYears ? "end" : "middle");
+      svg += '<text x="' + X(k).toFixed(1) + '" y="' + (CH - 10) + '" text-anchor="' + anchor + '" fill="var(--muted)">' + esc(yearsAxisLabel(yy)) + '</text>';
+    });
 
     function path(values, close) {
       var d = "";
@@ -62,19 +92,20 @@
     }
 
     if (cfg.band) {
-      // duas áreas sólidas e sem sobreposição: depósitos embaixo, juros só na faixa acima
-      svg += '<path d="' + path(cfg.band.bottom, true) + '" fill="var(--accent)" opacity=".30"/>';
-      svg += '<path d="' + strip(cfg.band.top, cfg.band.bottom) + '" fill="var(--warm)" opacity=".32"/>';
-      svg += '<path d="' + path(cfg.band.bottom, false) + '" fill="none" stroke="var(--accent)" stroke-width="2.75" stroke-linejoin="round"/>';
-      svg += '<path d="' + path(cfg.band.top, false) + '" fill="none" stroke="var(--warm)" stroke-width="3" stroke-linejoin="round"/>';
+      // duas áreas em wash (gradiente leve), sem sobreposição: depósitos embaixo, juros só na faixa acima
+      svg += '<path d="' + path(cfg.band.bottom, true) + '" fill="url(#' + gradAccent + ')"/>';
+      svg += '<path d="' + strip(cfg.band.top, cfg.band.bottom) + '" fill="url(#' + gradWarm + ')"/>';
+      svg += '<path d="' + path(cfg.band.bottom, false) + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      svg += '<path d="' + path(cfg.band.top, false) + '" fill="none" stroke="var(--warm)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
     }
     (cfg.series || []).forEach(function (s) {
       var color = s.color === "warm" ? "var(--warm)" : "var(--accent)";
-      if (s.fill) svg += '<path d="' + path(s.values, true) + '" fill="' + color + '" opacity=".18"/>';
-      svg += '<path d="' + path(s.values, false) + '" fill="none" stroke="' + color + '" stroke-width="3"' + (s.dashed ? ' stroke-dasharray="7 6"' : '') + ' stroke-linejoin="round"/>';
+      var grad = s.color === "warm" ? gradWarm : gradAccent;
+      if (s.fill) svg += '<path d="' + path(s.values, true) + '" fill="url(#' + grad + ')"/>';
+      svg += '<path d="' + path(s.values, false) + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round"' + (s.dashed ? ' stroke-dasharray="6 6"' : '') + ' stroke-linejoin="round"/>';
     });
 
-    // marcador no valor final de cada curva
+    // marcador no valor final de cada curva (a cor mora no marcador, não no texto)
     var endMarkers = cfg.band ? [
       { v: cfg.band.top[n], color: "var(--warm)" },
       { v: cfg.band.bottom[n], color: "var(--accent)" }
@@ -83,15 +114,16 @@
       svg += '<circle cx="' + X(n).toFixed(2) + '" cy="' + Y(m.v).toFixed(2) + '" r="4.5" fill="' + m.color + '" stroke="var(--surface)" stroke-width="2"/>';
     });
 
-    // valor final escrito no próprio gráfico (não depende de passar o mouse)
+    // valor final escrito no próprio gráfico — texto sempre em tinta neutra; a cor fica só no marcador ao lado
     var labels = endMarkers.map(function (m) { return { v: m.v, color: m.color, y: Y(m.v) - 11 }; }).sort(function (a, b) { return a.y - b.y; });
     for (var li = 1; li < labels.length; li++) {
       if (labels[li].y - labels[li - 1].y < 16) labels[li].y = labels[li - 1].y + 16;
     }
     labels.forEach(function (m) {
       var ly = Math.max(PAD.t + 8, Math.min(CH - PAD.b - 3, m.y));
-      svg += '<text x="' + (X(n) - 13).toFixed(1) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="end" ' +
-        'style="fill:' + m.color + ';font-weight:700;font-size:12.5px" paint-order="stroke" stroke="var(--surface)" stroke-width="4" stroke-linejoin="round">' +
+      svg += '<circle cx="' + (X(n) - 17).toFixed(1) + '" cy="' + (ly - 3.5).toFixed(1) + '" r="3" fill="' + m.color + '"/>';
+      svg += '<text x="' + (X(n) - 24).toFixed(1) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="end" ' +
+        'style="fill:var(--ink);font-weight:700;font-size:12.5px" paint-order="stroke" stroke="var(--surface)" stroke-width="4" stroke-linejoin="round">' +
         esc(shortMoney(m.v)) + '</text>';
     });
 
