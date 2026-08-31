@@ -225,14 +225,15 @@
     }
 
     var n = Fi.months(anos);
-    var rendaB = Fi.incomeDepleting(p, i, n);
+    var iB = 0.0087; // Opção B usa juros nominal fixo de 0,87% ao mês
+    var rendaB = Fi.incomeDepleting(p, iB, n);
 
     aB.classList.remove("is-empty");
     document.getElementById("c3b-result").textContent = money(rendaB);
     document.getElementById("c3b-caption").innerHTML =
       "Você tira <b>" + money(rendaB) + "</b> por mês por <b>" + fmtNum.format(anos).replace(",00", "") + " anos</b>. No fim do prazo, o dinheiro acaba.";
 
-    var serieB = Fi.depletionSeries(p, i, n, rendaB);
+    var serieB = Fi.depletionSeries(p, iB, n, rendaB);
     var serieA = [];
     for (var k = 0; k <= n; k++) serieA.push(p);
 
